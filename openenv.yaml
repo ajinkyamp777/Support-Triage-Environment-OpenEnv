@@ -1,0 +1,81 @@
+name: support-triage-env
+version: "1.0.0"
+description: Customer support ticket triage environment for training RL agents to handle real-world support scenarios
+
+entrypoint: env.environment:SupportEnv
+
+observation_model: env.models:Observation
+action_model: env.models:Action
+reward_model: env.models:Reward
+
+tasks:
+  - name: easy_task
+    description: Classify and respond to a straightforward support ticket
+    max_steps: 10
+    difficulty: easy
+    objective: Correctly classify the ticket category and provide appropriate response
+    action_space: ["classify:high", "classify:medium", "classify:low", "respond:refund", "respond:troubleshoot", "respond:escalate", "assign:billing", "assign:technical", "assign:general"]
+    observation_space: ["ticket_id", "message", "customer_type", "previous_actions", "last_action_error"]
+    baseline_score: 0.42
+    expert_score: 0.99
+    grader: env.graders:EasyGrader
+
+  - name: medium_task
+    description: Classify, assign to correct department, and respond to a ticket with some complexity
+    max_steps: 10
+    difficulty: medium
+    objective: Correctly classify ticket priority, route to appropriate department, and send resolution response
+    action_space: ["classify:high", "classify:medium", "classify:low", "respond:refund", "respond:troubleshoot", "respond:escalate", "assign:billing", "assign:technical", "assign:general"]
+    observation_space: ["ticket_id", "message", "customer_type", "previous_actions", "last_action_error"]
+    baseline_score: 0.42
+    expert_score: 0.99
+    grader: env.graders:MediumGrader
+
+  - name: hard_task
+    description: Multi-step resolution of noisy or complex support tickets with time pressure
+    max_steps: 10
+    difficulty: hard
+    objective: Handle noisy input, correctly classify, route to department, and complete full resolution efficiently
+    action_space: ["classify:high", "classify:medium", "classify:low", "respond:refund", "respond:troubleshoot", "respond:escalate", "assign:billing", "assign:technical", "assign:general"]
+    observation_space: ["ticket_id", "message", "customer_type", "previous_actions", "last_action_error"]
+    baseline_score: 0.42
+    expert_score: 0.99
+    grader: env.graders:HardGrader
+
+features:
+  - name: multiple_datasets
+    description: 15 distinct support tickets across 3 categories (billing, technical, general)
+  - name: message_noise
+    description: 40% message corruption rate with 4 noise patterns (CAPS, leetspeak, mixed case, typos)
+  - name: time_penalty
+    description: Linear time penalty (-0.05 per step) to encourage efficient resolution
+  - name: premium_bonus
+    description: 1.2x reward multiplier for premium customer type
+  - name: category_aware_rewards
+    description: Rewards vary by ticket category and action appropriateness
+
+metadata:
+  author: Support-Triage-Team
+  license: MIT
+  keywords: ["customer-support", "triage", "classification", "reinforcement-learning"]
+  requirements:
+    - fastapi
+    - uvicorn
+    - pydantic
+    - openai
+  environment_variables:
+    - name: OPENAI_API_KEY
+      description: OpenAI API key for LLM-based inference
+      optional: true
+    - name: HF_TOKEN
+      description: HuggingFace API token (preferred over OPENAI_API_KEY)
+      optional: true
+    - name: API_BASE_URL
+      description: Custom API base URL for OpenAI-compatible endpoints
+      optional: true
+    - name: MODEL_NAME
+      description: Model name to use (default - gpt-4)
+      optional: true
+    - name: USE_MOCK
+      description: Use mock inference instead of real API (default - true)
+      optional: true
